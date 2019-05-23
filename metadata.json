@@ -1,0 +1,67 @@
+{
+	"libName": "essi2c",
+	"manufacturer": "Sensirion",
+	"description": "Environmental Sensor Board",
+	"type": "Temperature Sensor",
+	"icon": "",
+	"image": "",
+	"version": "",
+	"eelVersion": "1",
+	"shoppingCartLinks":{
+		"digikey":{
+			"links":{
+				"info":"https://www.digikey.com/product-detail/en/sensirion-ag/ARDUINO-SHIELD-SGP30_SHTC1/1649-1113-ND/9838259"
+			},
+
+			"cartData":{
+				"part":"1649-1113-ND",
+				"partid":"9838259",
+				"source":"dkstudio",
+				"qty":"1"
+			}
+		}
+	},
+	"requires": [
+		"embedded", "i2c"
+	],
+	"elements": [
+		{
+			"name": "SensirionESSI2C",
+			"type": "EmbeddedSensirionESSI2C",
+			"icon": "EmbeddedFunction.svg",
+			"defaultAbility": "readTemperature",
+			"defaultTrigger": "temperatureRead",
+			"hidden": false,
+
+			"abilities": [
+				{
+					"name": "setup",
+					"hidden":true
+				},
+				{
+					"name": "readTemperature",
+					"triggers": ["temperatureRead"]
+				}
+			],
+			"properties":[
+				{
+					"name":"i2cInstance",
+					"input": "driverInstance",
+					"driverType": "i2c"
+				}
+			],
+			"triggers": [],
+			"variables": [],
+			"language": {
+				"en-US": {
+					"EmbeddedSensirionESSI2C": "Sensirion ESS",
+					"i2cInstance": "I2C Driver Instance",
+					"i2cAddress": "I2C Address",
+					"readTemperature": "Read Temperature",
+					"temperatureRead": "Temperature Read",
+					"setup": "Setup"
+				}
+			}
+		}
+	]
+}
