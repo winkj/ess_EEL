@@ -51,7 +51,7 @@ ATMO_ESSI2C_Status_t ATMO_ESSI2C_GetConfiguration(ATMO_ESSI2C_Config_t *config)
     return ATMO_ESSI2C_Status_Success;
 }
 
-ATMO_ESSI2C_Status_t ATMO_ESSI2C_GetTemperature(int32_t *temperatureCelsius)
+ATMO_ESSI2C_Status_t ATMO_ESSI2C_GetTemperature(float *temperatureCelsius)
 {
     if (!_ATMO_ESSI2C_config.configured) {
         return ATMO_ESSI2C_Status_Fail;
@@ -78,7 +78,7 @@ ATMO_ESSI2C_Status_t ATMO_ESSI2C_GetTemperature(int32_t *temperatureCelsius)
 
     //  mTemperature = mA + mB * (val / mC);
     uint16_t rawTemp = (data[0] << 8) | data[1];
-    *temperatureCelsius = (uint32_t)(-45 + (175.0 * rawTemp / 65535.0));
+    *temperatureCelsius = (float)(-45 + (175.0 * rawTemp / 65535.0));
 
     return ATMO_ESSI2C_Status_Success;
 }

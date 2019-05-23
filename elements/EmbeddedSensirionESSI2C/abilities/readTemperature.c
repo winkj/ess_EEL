@@ -1,4 +1,4 @@
-    int32_t tempC;
+    float tempC;
     ATMO_ESSI2C_GetTemperature(&tempC);
-    ATMO_CreateValueInt(out, tempC);
+    ATMO_CreateValueFloat(out, tempC);
     return ATMO_Status_Success;

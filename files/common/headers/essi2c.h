@@ -42,6 +42,6 @@ ATMO_ESSI2C_Status_t ATMO_ESSI2C_GetConfiguration(ATMO_ESSI2C_Config_t *config);
  *
  * @param[out] temperature
  */
-ATMO_ESSI2C_Status_t ATMO_ESSI2C_GetTemperature(int32_t *temperatureCelsius);
+ATMO_ESSI2C_Status_t ATMO_ESSI2C_GetTemperature(float *temperatureCelsius);
 
 #endif
