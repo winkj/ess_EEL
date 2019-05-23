@@ -44,4 +44,12 @@ ATMO_ESSI2C_Status_t ATMO_ESSI2C_GetConfiguration(ATMO_ESSI2C_Config_t *config);
  */
 ATMO_ESSI2C_Status_t ATMO_ESSI2C_GetTemperature(float *temperatureCelsius);
 
+/**
+ * Get Relative Humidity in percent
+ *
+ * @param[out] relative humidity
+ */
+ATMO_ESSI2C_Status_t ATMO_ESSI2C_GetHumidity(float *humidity);
+
+
 #endif

@@ -41,7 +41,12 @@
 				{
 					"name": "readTemperature",
 					"triggers": ["temperatureRead"]
+				},
+				{
+					"name": "readHumidity",
+					"triggers": ["humidityRead"]
 				}
+
 			],
 			"properties":[
 				{
@@ -59,6 +64,8 @@
 					"i2cAddress": "I2C Address",
 					"readTemperature": "Read Temperature",
 					"temperatureRead": "Temperature Read",
+					"readHumidity": "Read Humidity",
+					"humidityRead": "Humidity Read",
 					"setup": "Setup"
 				}
 			}
