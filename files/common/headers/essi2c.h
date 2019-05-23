@@ -51,5 +51,18 @@ ATMO_ESSI2C_Status_t ATMO_ESSI2C_GetTemperature(float *temperatureCelsius);
  */
 ATMO_ESSI2C_Status_t ATMO_ESSI2C_GetHumidity(float *humidity);
 
+/**
+ * total VOC compounds in ppb
+ *
+ * @param[out] total VOC
+ */
+ATMO_ESSI2C_Status_t ATMO_ESSI2C_GetTVoc(uint16_t *tVoc);
+
+/**
+ * CO2 equivalent in ppm
+ *
+ * @param[out] co2 equvalent
+ */
+ATMO_ESSI2C_Status_t ATMO_ESSI2C_GetCo2eq(uint16_t *co2eq);
 
 #endif

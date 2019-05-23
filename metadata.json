@@ -45,6 +45,14 @@
 				{
 					"name": "readHumidity",
 					"triggers": ["humidityRead"]
+				},
+				{
+					"name": "readTVoc",
+					"triggers": ["tVocRead"]
+				},
+				{
+					"name": "readCo2eq",
+					"triggers": ["co2eqRead"]
 				}
 
 			],
@@ -66,6 +74,10 @@
 					"temperatureRead": "Temperature Read",
 					"readHumidity": "Read Humidity",
 					"humidityRead": "Humidity Read",
+					"readTVoc": "Read Total VOC",
+					"tVocRead": "Total VOC Read",
+					"readCo2eq": "Read CO2 equivalent",
+					"co2eqRead": "CO2 equivalent Read",
 					"setup": "Setup"
 				}
 			}

@@ -16,6 +16,8 @@ static ATMO_I2C_Peripheral_t _ATMO_ESSI2C_i2cConfig = {
     .baudRate = ATMO_I2C_BaudRate_Standard_Mode
 };
 
+ATMO_ESSI2C_Status_t ATMO_ESSI2C_InitSGP_Internal();
+
 ATMO_ESSI2C_Status_t ATMO_ESSI2C_Init(ATMO_ESSI2C_Config_t *config)
 {
     if (config) { // Did the user supply a configuration?
@@ -23,6 +25,11 @@ ATMO_ESSI2C_Status_t ATMO_ESSI2C_Init(ATMO_ESSI2C_Config_t *config)
     } else {
         _ATMO_ESSI2C_config.configured = false;
     }
+
+    if (ATMO_ESSI2C_InitSGP_Internal() != ATMO_ESSI2C_Status_Success) {
+      return ATMO_ESSI2C_Status_Fail;
+    }
+
     return ATMO_ESSI2C_Status_Success;
 }
 
@@ -118,5 +125,26 @@ ATMO_ESSI2C_Status_t ATMO_ESSI2C_GetHumidity(float *humidity)
   uint16_t rawHumidity = (data[3] << 8) | data[4];
   *humidity = (float)(100.0 * rawHumidity / 65535.0);
 
+  return ATMO_ESSI2C_Status_Success;
+}
+
+
+ATMO_ESSI2C_Status_t ATMO_ESSI2C_InitSGP_Internal()
+{
+  // TODO: implement
+  return ATMO_ESSI2C_Status_Success;
+}
+
+ATMO_ESSI2C_Status_t ATMO_ESSI2C_GetTVoc(uint16_t *tVoc)
+{
+  // TODO: implement
+  *tVoc = 123;
+  return ATMO_ESSI2C_Status_Success;
+}
+
+ATMO_ESSI2C_Status_t ATMO_ESSI2C_GetCo2eq(uint16_t *co2eq)
+{
+  // TODO: implement
+  *co2eq = 456;
   return ATMO_ESSI2C_Status_Success;
 }
