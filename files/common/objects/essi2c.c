@@ -5,6 +5,21 @@
 #define ESS_SHT_CMD_LENGTH (2)
 #define ESS_SHT_DATA_LENGTH (6)
 
+#define ESS_SHT_UPDATE_THRESHOLD_MS 800
+#define ESS_SGP_UPDATE_THRESHOLD_MS 800
+
+#define ESS_SHT_MEASUREMENT_DELAY 15
+#define ESS_SGP_MEASUREMENT_DELAY 50
+
+static uint64_t sLastSHTUpdateMs = 0;
+static uint64_t sLastSGPUpdateMs = 0;
+
+static uint16_t sCo2eqCache = 0;
+static uint16_t sTVocCache = 0;
+
+static float sHumidityCache = 0;
+static float sTemperatureCache = 0;
+
 typedef struct {
     ATMO_ESSI2C_Config_t config;
     bool configured;
@@ -18,6 +33,9 @@ static ATMO_I2C_Peripheral_t _ATMO_ESSI2C_i2cConfig = {
 };
 
 ATMO_ESSI2C_Status_t ATMO_ESSI2C_InitSGP_Internal();
+ATMO_ESSI2C_Status_t ATMO_ESSI2C_updateSHT_Internal();
+ATMO_ESSI2C_Status_t ATMO_ESSI2C_updateSGP_Internal();
+
 
 ATMO_ESSI2C_Status_t ATMO_ESSI2C_Init(ATMO_ESSI2C_Config_t *config)
 {
@@ -30,6 +48,10 @@ ATMO_ESSI2C_Status_t ATMO_ESSI2C_Init(ATMO_ESSI2C_Config_t *config)
     if (ATMO_ESSI2C_InitSGP_Internal() != ATMO_ESSI2C_Status_Success) {
       return ATMO_ESSI2C_Status_Fail;
     }
+
+    // initial calls to update functions to set lastUpdate variables
+    ATMO_ESSI2C_updateSHT_Internal();
+    ATMO_ESSI2C_updateSGP_Internal();
 
     return ATMO_ESSI2C_Status_Success;
 }
@@ -66,10 +88,9 @@ ATMO_ESSI2C_Status_t ATMO_ESSI2C_GetConfiguration(ATMO_ESSI2C_Config_t *config)
 // ESS TODO
 // - cache values, check for lastReadTime, only update when expired
 // - check CRC
-// - extract delay constants
 
 ATMO_ESSI2C_Status_t ATMO_ESSI2C_ReadData_Internal(uint8_t addr, uint8_t* cmd, uint16_t cmdLength,
-          uint8_t* data, uint16_t dataLength, uint8_t measurementDelay)
+          uint8_t* data, uint16_t dataLength, uint16_t measurementDelay)
 {
   ATMO_I2C_Status_t readStatus;
   readStatus = ATMO_I2C_MasterWrite(_ATMO_ESSI2C_config.config.i2cDriverInstance,
@@ -91,46 +112,65 @@ ATMO_ESSI2C_Status_t ATMO_ESSI2C_ReadData_Internal(uint8_t addr, uint8_t* cmd, u
   return ATMO_ESSI2C_Status_Success;
 }
 
-ATMO_ESSI2C_Status_t ATMO_ESSI2C_GetTemperature(float *temperatureCelsius)
+// - SHT
+ATMO_ESSI2C_Status_t ATMO_ESSI2C_updateSHT_Internal()
 {
-    if (!_ATMO_ESSI2C_config.configured) {
-        return ATMO_ESSI2C_Status_Fail;
-    }
-
-    uint8_t data[ESS_SHT_DATA_LENGTH] = { 0 };
-    uint8_t cmd[ESS_SHT_CMD_LENGTH] = { 0x78, 0x66 };
-    if (ATMO_ESSI2C_ReadData_Internal(ESS_SHT_ADDR, cmd, ESS_SHT_CMD_LENGTH, data, ESS_SHT_DATA_LENGTH, 15) != ATMO_ESSI2C_Status_Success) {
-      return ATMO_ESSI2C_Status_Fail;
-    }
-
-    //  mTemperature = mA + mB * (val / mC);
-    uint16_t rawTemp = (data[0] << 8) | data[1];
-    *temperatureCelsius = (float)(-45 + (175.0 * rawTemp / 65535.0));
-
+  uint64_t now = ATMO_PLATFORM_UptimeMs();
+  if ((now - sLastSHTUpdateMs) < ESS_SHT_UPDATE_THRESHOLD_MS) {
+    // reuse cached values
     return ATMO_ESSI2C_Status_Success;
-}
+  }
+  sLastSHTUpdateMs = now;
 
-
-ATMO_ESSI2C_Status_t ATMO_ESSI2C_GetHumidity(float *humidity)
-{
   if (!_ATMO_ESSI2C_config.configured) {
       return ATMO_ESSI2C_Status_Fail;
   }
 
   uint8_t data[ESS_SHT_DATA_LENGTH] = { 0 };
   uint8_t cmd[ESS_SHT_CMD_LENGTH] = { 0x78, 0x66 };
-  if (ATMO_ESSI2C_ReadData_Internal(ESS_SHT_ADDR, cmd, ESS_SHT_CMD_LENGTH, data, ESS_SHT_DATA_LENGTH, 15) != ATMO_ESSI2C_Status_Success) {
+  if (ATMO_ESSI2C_ReadData_Internal(ESS_SHT_ADDR, cmd,
+                                    ESS_SHT_CMD_LENGTH, data,
+                                    ESS_SHT_DATA_LENGTH,
+                                    ESS_SHT_MEASUREMENT_DELAY) != ATMO_ESSI2C_Status_Success) {
     return ATMO_ESSI2C_Status_Fail;
   }
 
+  //  mTemperature = mA + mB * (val / mC);
+  uint16_t rawTemp = (data[0] << 8) | data[1];
+  sTemperatureCache = (float)(-45 + (175.0 * rawTemp / 65535.0));
+
   //  mHumidity = mX * (val / mY);
   uint16_t rawHumidity = (data[3] << 8) | data[4];
-  *humidity = (float)(100.0 * rawHumidity / 65535.0);
+  sHumidityCache = (float)(100.0 * rawHumidity / 65535.0);
+
+  return ATMO_ESSI2C_Status_Success;
+}
+
+ATMO_ESSI2C_Status_t ATMO_ESSI2C_GetTemperature(float *temperatureCelsius)
+{
+  if (ATMO_ESSI2C_updateSHT_Internal() != ATMO_ESSI2C_Status_Success) {
+    return ATMO_ESSI2C_Status_Fail;
+  }
+  *temperatureCelsius = sTemperatureCache;
 
   return ATMO_ESSI2C_Status_Success;
 }
 
 
+ATMO_ESSI2C_Status_t ATMO_ESSI2C_GetHumidity(float *humidity)
+{
+  if (ATMO_ESSI2C_updateSHT_Internal() != ATMO_ESSI2C_Status_Success) {
+    return ATMO_ESSI2C_Status_Fail;
+  }
+  *humidity = sHumidityCache;
+
+  return ATMO_ESSI2C_Status_Success;
+}
+
+
+
+
+// - SGP
 ATMO_ESSI2C_Status_t ATMO_ESSI2C_InitSGP_Internal()
 {
   uint8_t cmd[ESS_SHT_CMD_LENGTH] = { 0x20, 0x03 }; // init iaq
@@ -146,26 +186,49 @@ ATMO_ESSI2C_Status_t ATMO_ESSI2C_InitSGP_Internal()
   return ATMO_ESSI2C_Status_Success;
 }
 
-ATMO_ESSI2C_Status_t ATMO_ESSI2C_GetTVoc(uint16_t *tVoc)
+
+ATMO_ESSI2C_Status_t ATMO_ESSI2C_updateSGP_Internal()
 {
+  uint64_t now = ATMO_PLATFORM_UptimeMs();
+  if ((now - sLastSGPUpdateMs) < ESS_SGP_UPDATE_THRESHOLD_MS) {
+    // reuse cached values
+    return ATMO_ESSI2C_Status_Success;
+  }
+  sLastSGPUpdateMs = now;
+
+  if (!_ATMO_ESSI2C_config.configured) {
+      return ATMO_ESSI2C_Status_Fail;
+  }
+
   uint8_t data[ESS_SHT_DATA_LENGTH] = { 0 };
   uint8_t cmd[ESS_SHT_CMD_LENGTH] = { 0x20, 0x08 };
-  if (ATMO_ESSI2C_ReadData_Internal(ESS_SGP_ADDR, cmd, ESS_SHT_CMD_LENGTH, data, ESS_SHT_DATA_LENGTH, 1000) != ATMO_ESSI2C_Status_Success) {
+  if (ATMO_ESSI2C_ReadData_Internal(ESS_SGP_ADDR, cmd,
+                                    ESS_SHT_CMD_LENGTH, data,
+                                    ESS_SHT_DATA_LENGTH,
+                                    ESS_SGP_MEASUREMENT_DELAY) != ATMO_ESSI2C_Status_Success) {
     return ATMO_ESSI2C_Status_Fail;
   }
 
-  *tVoc = (uint16_t)(data[3] << 8) | data[4];
+  sTVocCache = (uint16_t)(data[3] << 8) | data[4];
+  sCo2eqCache = (uint16_t)(data[0] << 8) | data[1];
+
+  return ATMO_ESSI2C_Status_Success;
+}
+
+ATMO_ESSI2C_Status_t ATMO_ESSI2C_GetTVoc(uint16_t *tVoc)
+{
+  if (ATMO_ESSI2C_updateSGP_Internal() != ATMO_ESSI2C_Status_Success) {
+    return ATMO_ESSI2C_Status_Fail;
+  }
+  *tVoc = sTVocCache;
   return ATMO_ESSI2C_Status_Success;
 }
 
 ATMO_ESSI2C_Status_t ATMO_ESSI2C_GetCo2eq(uint16_t *co2eq)
 {
-  uint8_t data[ESS_SHT_DATA_LENGTH] = { 0 };
-  uint8_t cmd[ESS_SHT_CMD_LENGTH] = { 0x20, 0x08 };
-  if (ATMO_ESSI2C_ReadData_Internal(ESS_SGP_ADDR, cmd, ESS_SHT_CMD_LENGTH, data, ESS_SHT_DATA_LENGTH, 1000) != ATMO_ESSI2C_Status_Success) {
+  if (ATMO_ESSI2C_updateSGP_Internal() != ATMO_ESSI2C_Status_Success) {
     return ATMO_ESSI2C_Status_Fail;
   }
-
-  *co2eq = (uint16_t)(data[0] << 8) | data[1];
+  *co2eq = sCo2eqCache;
   return ATMO_ESSI2C_Status_Success;
 }
