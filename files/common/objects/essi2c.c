@@ -1,3 +1,13 @@
+// This is an adaption of:
+//   https://github.com/Sensirion/arduino-ess/blob/master/sensirion_ess.cpp
+//
+// Based on IR Thermoclick example
+//
+// Author: Johannes Winkelmann, jw@smts.ch
+//
+// ESS TODO
+// - check CRC
+
 #include "essi2c.h"
 
 #define ESS_SHT_ADDR (0x70)
@@ -80,14 +90,6 @@ ATMO_ESSI2C_Status_t ATMO_ESSI2C_GetConfiguration(ATMO_ESSI2C_Config_t *config)
     memcpy(config, &_ATMO_ESSI2C_config.config, sizeof(ATMO_ESSI2C_Config_t));
     return ATMO_ESSI2C_Status_Success;
 }
-
-
-// This is an adaption of:
-//   https://github.com/Sensirion/arduino-ess/blob/master/sensirion_ess.cpp
-
-// ESS TODO
-// - cache values, check for lastReadTime, only update when expired
-// - check CRC
 
 ATMO_ESSI2C_Status_t ATMO_ESSI2C_ReadData_Internal(uint8_t addr, uint8_t* cmd, uint16_t cmdLength,
           uint8_t* data, uint16_t dataLength, uint16_t measurementDelay)
