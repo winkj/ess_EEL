@@ -5,8 +5,6 @@
 //
 // Author: Johannes Winkelmann, jw@smts.ch
 //
-// ESS TODO
-// - check CRC
 
 #include "essi2c.h"
 
@@ -114,6 +112,25 @@ ATMO_ESSI2C_Status_t ATMO_ESSI2C_ReadData_Internal(uint8_t addr, uint8_t* cmd, u
   return ATMO_ESSI2C_Status_Success;
 }
 
+uint8_t ATMO_ESSI2C_CheckCrc_Internal(const uint8_t* data, uint8_t len)
+{
+    // adapted from SHT21 sample code from http://www.sensirion.com/en/products/humidity-temperature/download-center/
+
+    uint8_t crc = 0xff;
+    uint8_t byteCtr;
+    for (byteCtr = 0; byteCtr < len; ++byteCtr) {
+        crc ^= (data[byteCtr]);
+        for (uint8_t bit = 8; bit > 0; --bit) {
+            if (crc & 0x80) {
+                crc = (crc << 1) ^ 0x31;
+            } else {
+                crc = (crc << 1);
+            }
+        }
+    }
+    return crc;
+}
+
 // - SHT
 ATMO_ESSI2C_Status_t ATMO_ESSI2C_updateSHT_Internal()
 {
@@ -134,6 +151,11 @@ ATMO_ESSI2C_Status_t ATMO_ESSI2C_updateSHT_Internal()
                                     ESS_SHT_CMD_LENGTH, data,
                                     ESS_SHT_DATA_LENGTH,
                                     ESS_SHT_MEASUREMENT_DELAY) != ATMO_ESSI2C_Status_Success) {
+    return ATMO_ESSI2C_Status_Fail;
+  }
+
+  if (ATMO_ESSI2C_CheckCrc_Internal(data+0, 2) != data[2] ||
+      ATMO_ESSI2C_CheckCrc_Internal(data+3, 2) != data[5]) {
     return ATMO_ESSI2C_Status_Fail;
   }
 
@@ -211,6 +233,10 @@ ATMO_ESSI2C_Status_t ATMO_ESSI2C_updateSGP_Internal()
     return ATMO_ESSI2C_Status_Fail;
   }
 
+  if (ATMO_ESSI2C_CheckCrc_Internal(data+0, 2) != data[2] ||
+      ATMO_ESSI2C_CheckCrc_Internal(data+3, 2) != data[5]) {
+    return ATMO_ESSI2C_Status_Fail;
+  }
   sTVocCache = (uint16_t)(data[3] << 8) | data[4];
   sCo2eqCache = (uint16_t)(data[0] << 8) | data[1];
 
