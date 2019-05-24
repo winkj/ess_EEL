@@ -24,9 +24,11 @@ This implementation features:
 1. export the code, compile, enjoy
 
 Your design should look like this:
+
 ![Studio](doc/ESS_iot_studio_setup.jpg)
 
 The output in the Arduino serial monitor should look like this:
+
 ![Serial logger](doc/ESS_iot_studio_arduino_output.jpg)
 
 ## Notes
